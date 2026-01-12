@@ -6,3 +6,5 @@ pandas
 openpyxl
 requests
 python-multipart
+pdf2docx
+docx2pdf
