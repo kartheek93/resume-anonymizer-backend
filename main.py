@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from pydantic import BaseModel
 import os, shutil
@@ -10,13 +11,24 @@ from utils.drive_downloader import download_drive_file
 
 app = FastAPI()
 
+# ===============================
+# CORS CONFIGURATION
+# ===============================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace with frontend domain in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 UPLOADS = "uploads"
 OUTPUTS = "outputs"
 os.makedirs(UPLOADS, exist_ok=True)
 os.makedirs(OUTPUTS, exist_ok=True)
 
 # =========================================================
-# 1️⃣ BULK / SINGLE FILE UPLOAD (PDF / DOCX / XLSX / CSV)
+# 1️⃣ BULK / SINGLE FILE UPLOAD
 # =========================================================
 @app.post("/anonymize")
 async def anonymize(files: List[UploadFile]):
@@ -59,7 +71,7 @@ async def anonymize(files: List[UploadFile]):
 
 
 # =========================================================
-# 2️⃣ GOOGLE DRIVE RESUME LINK SUPPORT
+# 2️⃣ GOOGLE DRIVE LINK SUPPORT
 # =========================================================
 class DriveRequest(BaseModel):
     drive_url: str
