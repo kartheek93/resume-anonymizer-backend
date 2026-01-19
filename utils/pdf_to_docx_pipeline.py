@@ -2,17 +2,12 @@ import os
 import re
 from pdf2docx import Converter
 from docx import Document
+from utils.location_keywords import LOCATION_KEYWORDS
 
-EMOJI_PATTERN = re.compile(
-    "[\U0001F000-\U0001FAFF\u2600-\u27BF]",
-    flags=re.UNICODE
-)
+EMOJI_PATTERN = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF]", re.UNICODE)
 
-PERSONAL_KEYWORDS = [
-    "email", "@", "phone", "mobile", "contact",
-    "date of birth", "dob",
-    "nationality", "birth", "address",
-    "linkedin", "github", "leetcode", "hackerrank"
+SOCIAL_CONTEXT = [
+    "linkedin", "github", "leetcode", "hackerrank", "portfolio", "profile"
 ]
 
 def pdf_to_docx(pdf_path, docx_path):
@@ -25,19 +20,14 @@ def anonymize_docx(docx_path):
 
     for para in doc.paragraphs:
         text = para.text.lower()
-
-        # Remove emojis/icons
         para.text = EMOJI_PATTERN.sub("", para.text)
 
-        # Remove personal info lines
-        if any(k in text for k in PERSONAL_KEYWORDS):
+        if any(k in text for k in SOCIAL_CONTEXT) or any(loc in text for loc in LOCATION_KEYWORDS):
             para.text = ""
 
     doc.save(docx_path)
 
 def full_pdf_anonymization(input_pdf, output_docx):
     os.makedirs(os.path.dirname(output_docx), exist_ok=True)
-
-    temp_docx = output_docx
-    pdf_to_docx(input_pdf, temp_docx)
-    anonymize_docx(temp_docx)
+    pdf_to_docx(input_pdf, output_docx)
+    anonymize_docx(output_docx)

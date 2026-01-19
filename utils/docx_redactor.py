@@ -1,36 +1,33 @@
 import re
 from docx import Document
+from utils.location_keywords import LOCATION_KEYWORDS
 
-# Unicode emoji removal (any emoji)
-EMOJI_PATTERN = re.compile(
-    "[\U0001F300-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]",
-    flags=re.UNICODE
-)
-
-# Strong personal info patterns
+EMOJI_PATTERN = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF]", re.UNICODE)
 EMAIL_PATTERN = re.compile(r"@")
 PHONE_PATTERN = re.compile(r"\+?\d[\d\s\-]{8,}\d")
 
-# DOB in words or numbers
 DOB_PATTERN = re.compile(
     r"\b(dob|date\s+of\s+birth)\b|"
     r"\b\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4}\b",
     re.I
 )
 
-# Other identity info
 IDENTITY_LABEL_PATTERN = re.compile(
     r"\b(birth\s*place|birthplace|nationality|citizenship|gender|marital\s*status)\b",
     re.I
 )
 
-ADDRESS_PATTERN = re.compile(r"\d{1,4}[-/]\d{1,4}|\b\d{6}\b", re.I)
+ADDRESS_PATTERN = re.compile(r"\d{6}|\d{1,4}[-/]\d{1,4}", re.I)
 
-PLATFORM_KEYWORDS = [
-    "linkedin", "github", "git hub",
-    "leetcode", "leet code",
-    "hackerrank", "hacker rank",
-    "portfolio", "profile"
+SOCIAL_LABEL_PATTERN = re.compile(
+    r"\b(linked\s*in|github|git\s*hub|leet\s*code|hacker\s*rank|portfolio|profile)\b\s*[:\-|/]?\s*\S+",
+    re.I
+)
+
+USERNAME_PATTERN = re.compile(r"\b[a-z][a-z0-9._-]{3,}\b", re.I)
+
+SOCIAL_CONTEXT = [
+    "linkedin", "github", "leetcode", "hackerrank", "portfolio", "profile"
 ]
 
 def redact_docx_inplace(input_path, output_path):
@@ -40,23 +37,20 @@ def redact_docx_inplace(input_path, output_path):
         raw = para.text
         text = raw.lower()
 
-        # Step 1: remove emojis only
-        if EMOJI_PATTERN.search(raw):
-            for run in para.runs:
-                run.text = EMOJI_PATTERN.sub("", run.text)
+        para.text = EMOJI_PATTERN.sub("", para.text)
 
-        # Step 2: remove entire line if personal info
         delete_line = (
             EMAIL_PATTERN.search(raw)
             or PHONE_PATTERN.search(raw)
             or DOB_PATTERN.search(text)
             or IDENTITY_LABEL_PATTERN.search(text)
             or ADDRESS_PATTERN.search(text)
-            or any(p in text for p in PLATFORM_KEYWORDS)
+            or SOCIAL_LABEL_PATTERN.search(raw)
+            or (any(k in text for k in SOCIAL_CONTEXT) and USERNAME_PATTERN.search(raw))
+            or any(loc in text for loc in LOCATION_KEYWORDS)
         )
 
         if delete_line:
-            for run in para.runs:
-                run.text = ""
+            para.text = ""
 
     doc.save(output_path)
