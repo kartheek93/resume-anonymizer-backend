@@ -1,8 +1,9 @@
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from typing import List
 from pydantic import BaseModel
-import os, shutil
+import os, shutil, zipfile
 
 from utils.docx_redactor import redact_docx_inplace
 from utils.pdf_redactor import redact_pdf_inplace
@@ -58,16 +59,30 @@ async def anonymize(files: List[UploadFile]):
         else:
             continue
 
-        results.append({
-            "input": file.filename,
-            "output": output_path
-        })
+        results.append(output_path)
 
-    return {
-        "status": "success",
-        "processed": len(results),
-        "files": results
-    }
+    # 🔽 NEW: DOWNLOAD HANDLING (NO LOGIC CHANGED ABOVE)
+
+    if len(results) == 1:
+        # Single file → direct download
+        return FileResponse(
+            path=results[0],
+            filename=os.path.basename(results[0]),
+            media_type="application/octet-stream"
+        )
+
+    # Multiple files → ZIP download
+    zip_path = os.path.join(OUTPUTS, "anonymized_resumes.zip")
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file_path in results:
+            zipf.write(file_path, arcname=os.path.basename(file_path))
+
+    return FileResponse(
+        path=zip_path,
+        filename="anonymized_resumes.zip",
+        media_type="application/zip"
+    )
 
 
 # =========================================================
@@ -94,7 +109,9 @@ async def anonymize_from_drive(data: DriveRequest):
             "message": "Only PDF or DOCX resumes are supported"
         }
 
-    return {
-        "status": "success",
-        "output": output_path
-    }
+    # 🔽 NEW: DIRECT FILE DOWNLOAD
+    return FileResponse(
+        path=output_path,
+        filename=os.path.basename(output_path),
+        media_type="application/octet-stream"
+    )
