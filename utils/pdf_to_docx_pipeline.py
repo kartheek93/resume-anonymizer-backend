@@ -10,10 +10,12 @@ SOCIAL_CONTEXT = [
     "linkedin", "github", "leetcode", "hackerrank", "portfolio", "profile"
 ]
 
+
 def pdf_to_docx(pdf_path, docx_path):
     cv = Converter(pdf_path)
     cv.convert(docx_path)
     cv.close()
+
 
 def anonymize_docx(docx_path):
     doc = Document(docx_path)
@@ -26,6 +28,7 @@ def anonymize_docx(docx_path):
             para.text = ""
 
     doc.save(docx_path)
+
 
 def full_pdf_anonymization(input_pdf, output_docx):
     os.makedirs(os.path.dirname(output_docx), exist_ok=True)

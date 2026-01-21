@@ -12,12 +12,9 @@ from utils.drive_downloader import download_drive_file
 
 app = FastAPI()
 
-# ===============================
-# CORS CONFIGURATION
-# ===============================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with frontend domain in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,10 +24,6 @@ UPLOADS = "uploads"
 OUTPUTS = "outputs"
 os.makedirs(UPLOADS, exist_ok=True)
 os.makedirs(OUTPUTS, exist_ok=True)
-
-# =========================================================
-# 1️⃣ BULK / SINGLE FILE UPLOAD
-# =========================================================
 @app.post("/anonymize")
 async def anonymize(files: List[UploadFile]):
     results = []
@@ -61,8 +54,6 @@ async def anonymize(files: List[UploadFile]):
 
         results.append(output_path)
 
-    # 🔽 NEW: DOWNLOAD HANDLING (NO LOGIC CHANGED ABOVE)
-
     if len(results) == 1:
         # Single file → direct download
         return FileResponse(
@@ -83,11 +74,6 @@ async def anonymize(files: List[UploadFile]):
         filename="anonymized_resumes.zip",
         media_type="application/zip"
     )
-
-
-# =========================================================
-# 2️⃣ GOOGLE DRIVE LINK SUPPORT
-# =========================================================
 class DriveRequest(BaseModel):
     drive_url: str
 
@@ -109,7 +95,6 @@ async def anonymize_from_drive(data: DriveRequest):
             "message": "Only PDF or DOCX resumes are supported"
         }
 
-    # 🔽 NEW: DIRECT FILE DOWNLOAD
     return FileResponse(
         path=output_path,
         filename=os.path.basename(output_path),

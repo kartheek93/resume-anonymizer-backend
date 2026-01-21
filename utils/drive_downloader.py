@@ -13,13 +13,11 @@ def extract_drive_file_id(url: str) -> str:
             return m.group(1)
     raise ValueError("Invalid Google Drive link")
 
+
 def download_drive_file(drive_url: str, download_dir: str) -> str:
     os.makedirs(download_dir, exist_ok=True)
     file_id = extract_drive_file_id(drive_url)
 
-    # -------------------------------------------------
-    # 1️⃣ ALWAYS TRY GOOGLE DOCS EXPORT FIRST
-    # -------------------------------------------------
     export_url = f"https://docs.google.com/document/d/{file_id}/export?format=pdf"
     export_resp = requests.get(export_url)
 
@@ -29,14 +27,10 @@ def download_drive_file(drive_url: str, download_dir: str) -> str:
             f.write(export_resp.content)
         return output_path
 
-    # -------------------------------------------------
-    # 2️⃣ FALLBACK TO NORMAL DRIVE DOWNLOAD
-    # -------------------------------------------------
     session = requests.Session()
     download_url = "https://drive.google.com/uc?export=download"
     response = session.get(download_url, params={"id": file_id}, stream=True)
 
-    # Handle large file confirmation
     for k, v in response.cookies.items():
         if k.startswith("download_warning"):
             response = session.get(

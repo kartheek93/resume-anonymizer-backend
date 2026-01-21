@@ -1,9 +1,6 @@
 import re
 from docx import Document
-from docx.oxml.ns import qn
 from utils.location_keywords import LOCATION_KEYWORDS
-
-# ---------------- REGEX PATTERNS ----------------
 
 EMOJI_PATTERN = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF]", re.UNICODE)
 EMAIL_PATTERN = re.compile(r"@")
@@ -33,26 +30,16 @@ SOCIAL_CONTEXT = [
     "linkedin", "github", "leetcode", "hackerrank", "portfolio", "profile"
 ]
 
-# ---------------- HELPERS ----------------
 
 def remove_hyperlinks(paragraph):
-    """
-    Removes hyperlink nodes completely (LinkedIn, GitHub, mailto, tel)
-    """
     p = paragraph._p
     for link in p.findall(".//w:hyperlink", namespaces=p.nsmap):
         p.remove(link)
 
 def remove_inline_images(paragraph):
-    """
-    Removes inline images/icons inside a paragraph (LinkedIn icons, etc.)
-    """
     for run in paragraph.runs:
-        # graphicData indicates an embedded image
         if "graphicData" in run._element.xml:
             run.clear()
-
-# ---------------- MAIN FUNCTION ----------------
 
 def redact_docx_inplace(input_path, output_path):
     doc = Document(input_path)
@@ -61,14 +48,10 @@ def redact_docx_inplace(input_path, output_path):
         raw = para.text
         text = raw.lower()
 
-        # 🔹 Step 1: remove emojis
         para.text = EMOJI_PATTERN.sub("", para.text)
-
-        # 🔹 Step 2: remove hyperlinks & icon images
         remove_hyperlinks(para)
         remove_inline_images(para)
 
-        # 🔹 Step 3: decide whether to delete paragraph
         delete_line = (
             EMAIL_PATTERN.search(raw)
             or PHONE_PATTERN.search(raw)
