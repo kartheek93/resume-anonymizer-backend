@@ -44,11 +44,9 @@ def looks_like_name(text):
         return any(w[:1].isupper() for w in words)
     return False
 
-
 def remove_all_links(page):
     for link in page.get_links():
         page.delete_link(link)
-
 
 def remove_small_icon_images(page, y_limit, max_size=70):
     for img in page.get_images(full=True):
@@ -56,14 +54,12 @@ def remove_small_icon_images(page, y_limit, max_size=70):
             if rect.y1 <= y_limit and rect.width <= max_size and rect.height <= max_size:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
 
-
 def mask_vector_icons_micro(page, y_limit, max_size=85):
     for d in page.get_drawings():
         rect = d.get("rect")
         if rect and rect.y1 <= y_limit:
             if rect.width <= max_size and rect.height <= max_size:
                 page.add_redact_annot(rect, fill=(1, 1, 1))
-
 
 def auto_whiteout_contact_blocks(page, y_limit):
     redacted = False
@@ -98,13 +94,18 @@ def auto_whiteout_contact_blocks(page, y_limit):
             height = y1 - y0
             if looks_like_name(text):
                 cut = y0 + height * 0.35
-                page.add_redact_annot(fitz.Rect(x0, cut, x1, y1), fill=(1, 1, 1))
+                page.add_redact_annot(
+                    fitz.Rect(x0, cut, x1, y1),
+                    fill=(1, 1, 1)
+                )
             else:
-                page.add_redact_annot(fitz.Rect(x0, y0, x1, y1), fill=(1, 1, 1))
+                page.add_redact_annot(
+                    fitz.Rect(x0, y0, x1, y1),
+                    fill=(1, 1, 1)
+                )
             redacted = True
 
     return redacted
-
 
 def redact_pdf_inplace(input_pdf, output_pdf):
     try:
@@ -135,7 +136,8 @@ def redact_pdf_inplace(input_pdf, output_pdf):
                 raw = " ".join(w[4] for w in line_words)
                 text = raw.lower()
 
-                if any(w[3] > y_limit for w in line_words):
+                line_bottom = max(w[3] for w in line_words)
+                if line_bottom > y_limit:
                     continue
 
                 delete_line = (
@@ -160,7 +162,10 @@ def redact_pdf_inplace(input_pdf, output_pdf):
 
                 if delete_line:
                     for w in line_words:
-                        page.add_redact_annot(fitz.Rect(w[0], w[1], w[2], w[3]), fill=(1, 1, 1))
+                        page.add_redact_annot(
+                            fitz.Rect(w[0], w[1], w[2], w[3]),
+                            fill=(1, 1, 1)
+                        )
 
             mask_vector_icons_micro(page, y_limit)
             auto_whiteout_contact_blocks(page, y_limit)
